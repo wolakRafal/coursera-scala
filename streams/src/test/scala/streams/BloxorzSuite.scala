@@ -6,6 +6,7 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 import Bloxorz._
+import scala._
 
 @RunWith(classOf[JUnitRunner])
 class BloxorzSuite extends FunSuite {
@@ -40,26 +41,106 @@ class BloxorzSuite extends FunSuite {
     val optsolution = List(Right, Right, Down, Right, Right, Right, Down)
   }
 
-  ignore("terrain function level 1") {
+  trait Level0 extends SolutionChecker {
+    val level =
+      """ST
+        |oo
+        |oo""".stripMargin
+  }
+
+  trait InifiteLevel extends GameDef with Solver with InfiniteTerrain {
+
+  }
+
+  test("terrain function level 1") {
     new Level1 {
       assert(terrain(Pos(0,0)), "0,0")
       assert(!terrain(Pos(4,11)), "4,11")
     }
   }
 
-  ignore("findChar level 1") {
+  test("findChar level 1") {
     new Level1 {
       assert(startPos == Pos(1,1))
     }
   }
 
-  ignore("optimal solution for level 1") {
+
+  test("neighborsWithHistory") {
     new Level1 {
-      assert(solve(solution) == Block(goal, goal))
+      val res = neighborsWithHistory(Block(Pos(1,1),Pos(1,1)), List(Left,Up))
+      val expected = Set(
+        (Block(Pos(1, 2), Pos(1, 3)), List(Right, Left, Up)),
+        (Block(Pos(2, 1), Pos(3, 1)), List(Down, Left, Up))
+      )
+     assert(res.toSet == expected)
     }
   }
 
-  ignore("optimal solution length for level 1") {
+  test("NewNeighborsOnly") {
+    new Level1 {
+      val res0 = newNeighborsOnly(
+        Set(
+          (Block(Pos(1,2),Pos(1,3)), List(Right,Left,Up)),
+          (Block(Pos(2,1),Pos(3,1)), List(Down,Left,Up))
+        ).toStream,
+        Set(Block(Pos(1,2),Pos(1,3)), Block(Pos(1,1),Pos(1,1)))
+      )
+      val expected = Set(
+        (Block(Pos(2,1),Pos(3,1)), List(Down,Left,Up))
+      ).toStream
+
+      assert(res0 == expected)
+    }
+  }
+
+  test("avoid circles") {
+    new Level1 {
+      val neighbors = newNeighborsOnly(
+        Set(
+          (Block(Pos(1,2),Pos(1,3)), List(Right,Left,Up)),
+          (Block(Pos(2,1),Pos(3,1)), List(Down,Left,Up))
+        ).toStream,
+
+        Set(Block(Pos(1,2),Pos(1,3)), Block(Pos(1,1),Pos(1,1)))
+      )
+      val result = Set((Block(Pos(2,1),Pos(3,1)), List(Down,Left,Up))).toStream
+      assert(neighbors == result)
+    }
+  }
+
+  ignore("From Test 1") {
+    new InifiteLevel {
+      val startPos: this.type#Pos = Pos(2, 2)
+      val goal: this.type#Pos = Pos(4, 4)
+
+      val res = from(Stream(
+        (Block(startPos, startPos), List[Move](Down)),
+        (Block(Pos(0,2), Pos(1,2)), List[Move]())
+        ), Set())
+      println((res take 10).toList)
+    }
+  }
+
+  ignore("optimal solution for level 2") {
+    new Level0 {
+      println(" PAths: From start" + pathsFromStart.toList )//.filter( _._1.b1 == goal ))
+      val s = solve(solution)
+      println("optimal solution for level 1 -> Moves:" + solution + " End Block " + s)
+      assert(s == Block(goal, goal))
+    }
+  }
+
+  ignore("optimal solution for level 1") {
+    new Level1 {
+//      println(" PAths: From start" + pathsFromStart.toList )//.filter( _._1.b1 == goal ))
+      val s = solve(solution)
+//      println("optimal solution for level 1 -> Moves:" + solution + " End Block " + s)
+      assert(s == Block(goal, goal))
+    }
+  }
+
+  test("optimal solution length for level 1") {
     new Level1 {
       assert(solution.length == optsolution.length)
     }
